@@ -23,7 +23,7 @@ Most often though there is a way to achieve the same things. In terms of functio
 ## Syscall example
 
 To get a bit more familiar with `syscalls` we'll implement a very basic one for 
-the three architectures: `BSD(macos)`, `Linux` and `Windows`. We'll also see how this is implemented in three levels of abstractions.
+the three architectures: `BSD(macOS)`, `Linux` and `Windows`. We'll also see how this is implemented in three levels of abstractions.
 
 The `syscall` we'll implement is the one used when we write something to `stdout` since that is such a common operation and it's interesting to se how it really works.
 
@@ -35,7 +35,7 @@ For this to work we need to write some [inline assembly](https://doc.rust-lang.o
 
 Now at this level of abstraction, we'll write different code for all three platforms.
 
-On Linux and Macos the `syscall` we want to invoke is called `write`. Both systems operates based on the concept of `file descriptors` and `stdout` is one of these already present when you start a process.
+On Linux and macOS the `syscall` we want to invoke is called `write`. Both systems operates based on the concept of `file descriptors` and `stdout` is one of these already present when you start a process.
 
 **On Linux a `write` syscall can look like this** \
 (You can run the example by clicking "play" in the right corner)
@@ -76,7 +76,7 @@ Secondly we pass in the address of our string buffer and the length of the buffe
 
 > The `syscall` instruction is a rather new one. On the earlier 32-bit systems in the `x86` architecture, you invoked a syscall by issuing a software interrupt `int 0x80`. A software interrupt is considered slow at the level we're working at here so later a seperate instruction for it called `syscall` was added. The `syscall` instruction uses [VDSO](http://articles.manugarg.com/systemcallinlinux2_6.html), which is a memory page attached to each process' memory, so no context switch is necessary to execute the system call.
 
-**On Macos, the syscall will look something like this:** \
+**On macOS, the syscall will look something like this:** \
 (since the Rust playground is running Linux, we can't run this example here)
 
 ```rust, no_run
@@ -93,7 +93,7 @@ fn syscall(message: String) {
     unsafe {
         asm!(
             "
-        mov     $$0x2000004, %rax   # system call 0x2000004 is write on macos
+        mov     $$0x2000004, %rax   # system call 0x2000004 is write on macOS
         mov     $$1, %rdi           # file handle 1 is stdout
         mov     $0, %rsi            # address of string to output
         mov     $1, %rdx            # number of bytes
@@ -112,8 +112,8 @@ As you see this is not that different from the one we wrote for Linux, with the 
 
 This is a good opportunity to explain why writing code like we do above is a bad idea. 
 
-You see, if you want your code to work for a long time you have to worry about what `guarantees` the OS gives you. As far as I know, both Linux and Macos gives
-some guarantees that for example `$$0x2000004` on Macos will always refer to `write` (I'm not sure how strong these guarantees are though). Windows gives absolutely zero guarantees when it comes to low level internals like this.
+You see, if you want your code to work for a long time you have to worry about what `guarantees` the OS gives you. As far as I know, both Linux and macOS gives
+some guarantees that for example `$$0x2000004` on macOS will always refer to `write` (I'm not sure how strong these guarantees are though). Windows gives absolutely zero guarantees when it comes to low level internals like this.
 
 Windows has changed it's internals numerous times and provides no official documentation. The only thing we got is reverse engineered tables like [this](https://j00ru.vexillium.org/syscalls/nt/64/). That means that what was `write` can be changed to `delete` the next time you run Windows update.
 
@@ -121,16 +121,16 @@ Windows has changed it's internals numerous times and provides no official docum
 
 The next level of abstraction is to use the API which all three operating systems provide for us.
 
-Already we can see that this abstraction helps us remove some code since fortunately for us, in this specific example, the syscall is the same on Linux and on Macos so we only need to worry if we're on Windows and therefore use the `#[cfg(not(target_os = "windows"))]` conditional compilation flag. For the Windows syscall we do the opposite.
+Already we can see that this abstraction helps us remove some code since fortunately for us, in this specific example, the syscall is the same on Linux and on macOS so we only need to worry if we're on Windows and therefore use the `#[cfg(not(target_os = "windows"))]` conditional compilation flag. For the Windows syscall we do the opposite.
 
-### Using the OS provided API in Linux and Macos
+### Using the OS provided API in Linux and macOS
 
 You can run this code directly here in the window. However, the Rust playground 
 runs on Linux, you'll need to copy the code over to a Windows machine if you 
 want to try it out the code for Windows further down.
 
 **Our syscall will now look like this** \
-(You can run this code here. It will work for both Linux and Macos)
+(You can run this code here. It will work for both Linux and macOS)
 
 ```rust
 use std::io;
@@ -384,7 +384,7 @@ together with the `GetStdHandle` documentation:
 Now, we're lucky here, it's not that common that we find this information 
 together with the documentation for the function we call but it's very convenient when we do.
 
-The return codes to expect is also documented thoroughly for all functions so we handle potential errors here in the same way as we did for the Linux/Macos syscalls.
+The return codes to expect is also documented thoroughly for all functions so we handle potential errors here in the same way as we did for the Linux/macOS syscalls.
 
 ```rust, no_run
 let res = unsafe { 
